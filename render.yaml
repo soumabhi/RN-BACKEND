@@ -11,21 +11,18 @@ services:
       - key: PORT
         value: 3000
       - key: MONGODB_URI
-        fromDatabase:
-          name: mongodb
-          property: connectionString
+        sync: false
       - key: JWT_SECRET
         sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
       - key: AWS_REGION
         value: ap-south-1
       - key: AWS_ACCESS_KEY_ID
         sync: false
       - key: AWS_SECRET_ACCESS_KEY
         sync: false
-      - key: S3_BUCKET_NAME
+      - key: S3_BUCKET
         sync: false
-
-databases:
-  - name: mongodb
-    plan: free
-    ipAllowList: []
+      - key: SIGNED_URL_EXPIRY
+        value: 300
