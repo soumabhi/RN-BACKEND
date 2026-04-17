@@ -40,6 +40,39 @@ const versionSchema = new mongoose.Schema(
       min: 0,
       max: 100,
     },
+    // NEW in v2.2: Smart Rollout Features
+    segment: {
+      type: String,
+      default: "all",
+      enum: ["all", "beta_testers", "canary", "early_access", "vip"],
+    },
+    minVersion: {
+      type: String,
+      default: undefined,
+    },
+    maxVersion: {
+      type: String,
+      default: undefined,
+    },
+    countries: {
+      type: [String],
+      default: [],
+    },
+    // NEW in v2.2: Crash-based auto-rollback
+    crashThreshold: {
+      type: Number,
+      default: 5,
+      min: 1,
+      max: 100,
+    },
+    crashWindowSeconds: {
+      type: Number,
+      default: 300,
+    },
+    autoRollbackEnabled: {
+      type: Boolean,
+      default: true,
+    },
     isActive: {
       type: Boolean,
       default: true,

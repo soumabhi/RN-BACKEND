@@ -10,7 +10,16 @@ const s3 = require("../services/s3");
  */
 exports.uploadBundle = async (req, res, next) => {
   try {
-    const { appId, version, platform = "android", rollout = 100 } = req.body;
+    const {
+      appId,
+      version,
+      platform = "android",
+      rollout = 100,
+      segment = "all",              // NEW
+      minVersion,                    // NEW
+      maxVersion,                    // NEW
+      countries,                     // NEW
+    } = req.body;
 
     if (!appId || !version) {
       return res.status(400).json({ error: "appId and version are required" });
@@ -53,11 +62,17 @@ exports.uploadBundle = async (req, res, next) => {
       bundleKey: s3Key,
       size: req.file.size,
       rollout: Math.min(100, Math.max(0, Number(rollout))),
+      segment: segment || "all",                           // NEW
+      minVersion: minVersion || undefined,                  // NEW
+      maxVersion: maxVersion || undefined,                  // NEW
+      countries: countries ? countries.split(",") : [],    // NEW
+      autoRollbackEnabled: true,                           // NEW
+      crashThreshold: 5,                                    // NEW
       isActive: true,
     });
 
     console.log(
-      `[upload] ${appId}/${platform} → v${version} (rollout ${versionDoc.rollout}%)`,
+      `[upload] ${appId}/${platform} → v${version} (rollout ${versionDoc.rollout}%, segment: ${versionDoc.segment})`,  // Updated log
     );
 
     res.status(201).json({
@@ -68,6 +83,10 @@ exports.uploadBundle = async (req, res, next) => {
         platform,
         version: versionDoc.version,
         rollout: versionDoc.rollout,
+        segment: versionDoc.segment,                    // NEW
+        minVersion: versionDoc.minVersion,              // NEW
+        maxVersion: versionDoc.maxVersion,              // NEW
+        countries: versionDoc.countries,                // NEW
         isActive: versionDoc.isActive,
         size: versionDoc.size,
       },

@@ -10,7 +10,14 @@ const { isInRollout, compareVersions } = require("../utils/rollout");
  */
 exports.checkUpdate = async (req, res, next) => {
   try {
-    const { appId, platform = "android", version, userId } = req.query;
+    const {
+      appId,
+      platform = "android",
+      version,
+      userId,
+      userSegment,        // NEW: client can optionally hint their segment
+      userCountry,        // NEW: client can optionally provide their country
+    } = req.query;
 
     if (!appId || !version || !userId) {
       return res
@@ -32,6 +39,30 @@ exports.checkUpdate = async (req, res, next) => {
     // Already on latest or newer
     if (compareVersions(version, latest.version) >= 0) {
       return res.json({ update: false });
+    }
+
+    // NEW: Check version targeting (minVersion/maxVersion)
+    if (latest.minVersion && compareVersions(latest.version, latest.minVersion) < 0) {
+      return res.json({ update: false, reason: "below_min_version" });
+    }
+    if (latest.maxVersion && compareVersions(latest.version, latest.maxVersion) > 0) {
+      return res.json({ update: false, reason: "above_max_version" });
+    }
+
+    // NEW: Check segment eligibility
+    if (latest.segment !== "all") {
+      const clientSegment = userSegment || "default";
+      if (clientSegment !== latest.segment) {
+        return res.json({ update: false, reason: "not_in_segment" });
+      }
+    }
+
+    // NEW: Check geo-based rollout
+    if (latest.countries && latest.countries.length > 0) {
+      const clientCountry = userCountry || "UNKNOWN";
+      if (!latest.countries.includes(clientCountry)) {
+        return res.json({ update: false, reason: "not_in_country" });
+      }
     }
 
     // Rollout gate

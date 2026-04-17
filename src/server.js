@@ -5,6 +5,7 @@ const helmet = require("helmet");
 const cors = require("cors");
 const rateLimit = require("express-rate-limit");
 const { errorHandler } = require("./middleware/errorHandler");
+const autoRollback = require("./services/autoRollback"); // NEW
 
 // Route imports
 const authRoutes = require("./routes/auth");
@@ -50,9 +51,18 @@ app.use("/api", versionRoutes);
 app.use("/api", updateRoutes);
 app.use("/api", logRoutes);
 
-// Health check
+// Health check (basic)
 app.get("/health", (_req, res) =>
   res.json({ status: "ok", time: new Date().toISOString() }),
+);
+
+// Health check (detailed) — includes auto-rollback status
+app.get("/health/detailed", (_req, res) =>
+  res.json({
+    status: "ok",
+    time: new Date().toISOString(),
+    autoRollback: autoRollback.getStatus(),
+  }),
 );
 
 // ── Error handler ─────────────────────────────────────────
@@ -64,8 +74,12 @@ async function start() {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log("✅ Connected to MongoDB");
 
+    // Start auto-rollback service (monitors crash rates)
+    autoRollback.startGlobalMonitoring(5); // checks every 5 seconds
+
     app.listen(PORT, () => {
       console.log(`🚀 rn-ota server running on port ${PORT}`);
+      console.log(`📊 Auto-rollback service active`);
     });
   } catch (err) {
     console.error("❌ Failed to start server:", err.message);
